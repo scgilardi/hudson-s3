@@ -1,0 +1,45 @@
+diff --git a/src/main/java/com/hyperic/hudson/plugin/S3Profile.java b/src/main/java/com/hyperic/hudson/plugin/S3Profile.java
+index d80b1c7..8f8c81f 100644
+--- a/src/main/java/com/hyperic/hudson/plugin/S3Profile.java
++++ b/src/main/java/com/hyperic/hudson/plugin/S3Profile.java
+@@ -82,7 +82,26 @@ public class S3Profile {
+         this.s3 = null;
+     }
+ 
++    private String getBucketName(String bucketName) {
++        if (bucketName.contains("/")) {
++            return bucketName.substring(0, bucketName.indexOf('/'));
++        }
++        return bucketName;
++    }
++
++    private String getKeyPrefix(String bucketName) {
++        if (bucketName.contains("/")) {
++            String prefix = bucketName.substring(bucketName.indexOf('/') + 1);
++            if (!prefix.endsWith("/")) {
++                prefix += "/";
++            }
++            return prefix;
++        }
++        return "";
++    }
++
+     private S3Bucket getOrCreateBucket(String bucketName) throws S3ServiceException {
++        bucketName = getBucketName(bucketName);
+         S3Bucket bucket = this.s3.getBucket(bucketName);
+         if (bucket == null) {
+             bucket = this.s3.createBucket(new S3Bucket(bucketName));
+@@ -110,11 +129,11 @@ public class S3Profile {
+ 
+             try {
+                 S3Object fileObject =
+-                    new S3Object(bucket, file.getName());
++                    new S3Object(bucket, getKeyPrefix(bucketName) + file.getName());
+                 fileObject.setDataInputStream(filePath.read());
+                 this.s3.putObject(bucket, fileObject);
+             } catch (Exception e) {
+-                throw new IOException("put " + file + ": " + e);
++                throw (IOException) (new IOException("put " + file + ": " + e).initCause(e));
+             }
+         }
+     }
